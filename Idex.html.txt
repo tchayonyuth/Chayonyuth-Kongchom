@@ -1,1 +1,175 @@
-Download ไฟล์ index.html
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Stock System</title>
+<style>
+body { font-family: Arial; padding: 20px; background:#f5f5f5; }
+h1 { color:#333; }
+.container { display:flex; gap:20px; }
+.box { background:white; padding:15px; border-radius:10px; width:100%; }
+button { padding:5px 10px; margin:5px; cursor:pointer; }
+input { margin:5px; padding:5px; }
+table { width:100%; border-collapse: collapse; }
+th, td { border:1px solid #ddd; padding:8px; text-align:center; }
+</style>
+</head>
+
+<body>
+
+<h1>📦 Stock Management</h1>
+
+<div class="container">
+
+<!-- STOCK TABLE -->
+<div class="box">
+<h3>Stock ปัจจุบัน</h3>
+<table id="stockTable">
+<thead>
+<tr>
+<th>Item</th>
+<th>จำนวน</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+
+<h4>➕ เพิ่ม Item</h4>
+<input id="newItem" placeholder="ชื่อของ">
+<button onclick="addItem()">เพิ่ม</button>
+</div>
+
+<!-- ACTION -->
+<div class="box">
+<h3>📥 เบิก / เติม</h3>
+
+<select id="itemSelect"></select><br>
+
+<input id="qty" type="number" placeholder="จำนวน"><br>
+<input id="user" placeholder="ชื่อผู้ทำรายการ"><br>
+
+<button onclick="withdraw()">เบิก</button>
+<button onclick="addStock()">เติม</button>
+</div>
+
+<!-- DASHBOARD -->
+<div class="box">
+<h3>📊 Dashboard</h3>
+<p id="summary"></p>
+</div>
+
+</div>
+
+<script>
+let items = JSON.parse(localStorage.getItem("items")) || [];
+let transactions = JSON.parse(localStorage.getItem("transactions")) || [];
+
+function save() {
+localStorage.setItem("items", JSON.stringify(items));
+localStorage.setItem("transactions", JSON.stringify(transactions));
+}
+
+function render() {
+let table = document.querySelector("#stockTable tbody");
+let select = document.getElementById("itemSelect");
+
+table.innerHTML = "";
+select.innerHTML = "";
+
+items.forEach((item, index) => {
+table.innerHTML += `
+<tr>
+<td>${item.name}</td>
+<td>${item.stock}</td>
+<td>
+<button onclick="quickWithdraw(${index})">-1</button>
+</td>
+</tr>
+`;
+
+select.innerHTML += `<option value="${index}">${item.name}</option>`;
+});
+
+updateDashboard();
+}
+
+function addItem() {
+let name = document.getElementById("newItem").value;
+if (!name) return;
+items.push({ name, stock: 0 });
+save();
+render();
+}
+
+function withdraw() {
+let i = itemSelect.value;
+let qty = parseInt(document.getElementById("qty").value);
+let user = document.getElementById("user").value;
+
+if (!qty || !user) return;
+
+items[i].stock -= qty;
+
+transactions.push({
+type: "withdraw",
+item: items[i].name,
+qty,
+user,
+date: new Date()
+});
+
+save();
+render();
+}
+
+function addStock() {
+let i = itemSelect.value;
+let qty = parseInt(document.getElementById("qty").value);
+let user = document.getElementById("user").value;
+
+if (!qty || !user) return;
+
+items[i].stock += qty;
+
+transactions.push({
+type: "add",
+item: items[i].name,
+qty,
+user,
+date: new Date()
+});
+
+save();
+render();
+}
+
+function quickWithdraw(i) {
+items[i].stock -= 1;
+
+transactions.push({
+type: "withdraw",
+item: items[i].name,
+qty: 1,
+user: "quick",
+date: new Date()
+});
+
+save();
+render();
+}
+
+function updateDashboard() {
+let totalWithdraw = transactions
+.filter(t => t.type === "withdraw")
+.reduce((sum, t) => sum + t.qty, 0);
+
+document.getElementById("summary").innerText =
+"ยอดเบิกรวม: " + totalWithdraw;
+}
+
+render();
+</script>
+
+</body>
+</html>
